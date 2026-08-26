@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card-border: hsl(var(--card-border));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover-border: hsl(var(--popover-border));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary-border: var(--primary-border);
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-secondary-border: var(--secondary-border);
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-muted-border: var(--muted-border);
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent-border: var(--accent-border);
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-destructive-border: var(--destructive-border);
+
+  --font-sans: var(--app-font-sans);
+  --font-mono: var(--app-font-mono);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --app-font-sans: 'Onest', sans-serif;
+  --app-font-mono: 'JetBrains Mono', monospace;
+
+  --background: 210 38% 97%;
+  --foreground: 222 24% 12%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222 24% 12%;
+  --card-border: 210 22% 89%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 24% 12%;
+  --popover-border: 210 22% 89%;
+
+  --primary: 198 100% 47%;
+  --primary-foreground: 0 0% 100%;
+  
+  --secondary: 210 32% 93%;
+  --secondary-foreground: 222 24% 16%;
+
+  --muted: 210 32% 94%;
+  --muted-foreground: 216 12% 43%;
+
+  --accent: 147 78% 94%;
+  --accent-foreground: 151 66% 26%;
+
+  --destructive: 0 72% 52%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 210 21% 87%;
+  --input: 210 21% 84%;
+  --ring: 198 100% 47%;
+
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: 218 27% 10%;
+  --foreground: 210 35% 94%;
+
+  --card: 218 25% 14%;
+  --card-foreground: 210 35% 94%;
+  --card-border: 217 19% 24%;
+
+  --popover: 218 25% 14%;
+  --popover-foreground: 210 35% 94%;
+  --popover-border: 217 19% 24%;
+
+  --primary: 198 92% 52%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 218 19% 21%;
+  --secondary-foreground: 210 35% 94%;
+
+  --muted: 218 19% 21%;
+  --muted-foreground: 214 17% 66%;
+
+  --accent: 151 34% 20%;
+  --accent-foreground: 150 67% 78%;
+
+  --destructive: 0 62% 47%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 217 19% 27%;
+  --input: 217 19% 27%;
+  --ring: 198 92% 52%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply font-sans antialiased bg-background text-foreground selection:bg-primary/20 selection:text-primary-foreground;
+  }
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
