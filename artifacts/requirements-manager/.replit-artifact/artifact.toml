@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "AI-менеджер требований"
+description = "Mobile-first веб-приложение, которое помогает заказчикам в диалоге собрать требования к проекту и подготовить понятное техническое задание для разработчика."
+version = "1.0.0"
+id = "artifacts/requirements-manager"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23697
+
+[services.development]
+run = "pnpm --filter @workspace/requirements-manager run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/requirements-manager", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/requirements-manager/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23697"
+BASE_PATH = "/"
