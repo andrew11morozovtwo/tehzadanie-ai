@@ -1,0 +1,482 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+  - name: sessions
+  - name: ai
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a client and issue a one-time password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Registered user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "409":
+          description: Email already registered
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Log in with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      responses:
+        "204":
+          description: Logged out
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /sessions:
+    get:
+      operationId: listSessions
+      tags: [sessions]
+      summary: List the current user's sessions
+      responses:
+        "200":
+          description: Session list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Session"
+    post:
+      operationId: createSession
+      tags: [sessions]
+      summary: Create a new requirements session
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionInput"
+      responses:
+        "201":
+          description: New session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionDetail"
+  /sessions/{id}:
+    get:
+      operationId: getSession
+      tags: [sessions]
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Session with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionDetail"
+  /sessions/{id}/message:
+    post:
+      operationId: sendMessage
+      tags: [ai]
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "200":
+          description: User message and AI reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessagePair"
+  /sessions/{id}/finalize:
+    post:
+      operationId: finalizeSession
+      tags: [ai]
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Generated requirements document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDocument"
+        "409":
+          description: Finalization is blocked by missing details or session status
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/FinalizeBlocked"
+                  - $ref: "#/components/schemas/FinalizeConflict"
+  /sessions/{id}/tz:
+    get:
+      operationId: getProjectDocument
+      tags: [sessions]
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Requirements document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDocument"
+  /sessions/{id}/files:
+    get:
+      operationId: listReferenceFiles
+      tags: [sessions]
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Files attached to a project
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReferenceFile"
+    post:
+      operationId: uploadReferenceFile
+      tags: [sessions]
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Uploaded reference file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReferenceFile"
+  /sessions/{id}/files/{fileId}:
+    delete:
+      operationId: deleteReferenceFile
+      tags: [sessions]
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - name: fileId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+  /send-tz:
+    post:
+      operationId: sendProjectDocument
+      tags: [sessions]
+      summary: Send a finalized technical brief to the developer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendProjectDocumentInput"
+      responses:
+        "200":
+          description: Sent project document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDocument"
+  /transcribe:
+    post:
+      operationId: transcribeAudio
+      tags: [ai]
+      summary: Transcribe an audio message
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/AudioUploadInput"
+      responses:
+        "200":
+          description: Audio transcription
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transcription"
+components:
+  parameters:
+    SessionId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    User:
+      type: object
+      required: [id, name, email]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+    RegisterInput:
+      type: object
+      required: [name, email]
+      properties:
+        name: { type: string, minLength: 2 }
+        email: { type: string, format: email }
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 1 }
+    AuthResponse:
+      type: object
+      required: [user, password, is_new]
+      properties:
+        user: { $ref: "#/components/schemas/User" }
+        password: { type: ["string", "null"] }
+        is_new: { type: boolean }
+    Session:
+      type: object
+      required: [id, status, title, summary, created_at, last_active, message_count, has_document, interview_state]
+      properties:
+        id: { type: integer }
+        status: { type: string, enum: [active, draft, final, sent] }
+        title: { type: string }
+        summary: { type: ["string", "null"] }
+        created_at: { type: string }
+        last_active: { type: string }
+        message_count: { type: integer }
+        has_document: { type: boolean }
+        interview_state: { $ref: "#/components/schemas/InterviewState" }
+    Message:
+      type: object
+      required: [id, role, sender_type, sender_label, content, timestamp]
+      properties:
+        id: { type: integer }
+        role: { type: string, enum: [user, assistant] }
+        sender_type: { type: string, enum: [user, bot] }
+        sender_label: { type: string }
+        content: { type: string }
+        timestamp: { type: string }
+    SessionDetail:
+      allOf:
+        - $ref: "#/components/schemas/Session"
+        - type: object
+          required: [messages]
+          properties:
+            messages:
+              type: array
+              items: { $ref: "#/components/schemas/Message" }
+    MessageInput:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1 }
+    CreateSessionInput:
+      type: object
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+    MessagePair:
+      type: object
+      required: [user_message, assistant_message, interview_state]
+      properties:
+        user_message: { $ref: "#/components/schemas/Message" }
+        assistant_message: { $ref: "#/components/schemas/Message" }
+        interview_state: { $ref: "#/components/schemas/InterviewState" }
+    MissingQuestion:
+      type: object
+      required: [key, title, question]
+      properties:
+        key:
+          type: string
+          enum:
+            - goal
+            - users
+            - main_scenario
+            - mvp_features
+            - data
+            - platform
+            - integrations
+            - constraints
+            - success_criteria
+        title: { type: string }
+        question: { type: string }
+    InterviewProgress:
+      type: object
+      required: [answered, required, percent, questions_asked, max_questions]
+      properties:
+        answered: { type: integer, minimum: 0 }
+        required: { type: integer, minimum: 1 }
+        percent: { type: integer, minimum: 0, maximum: 100 }
+        questions_asked: { type: integer, minimum: 0 }
+        max_questions: { type: integer, minimum: 1 }
+    InterviewState:
+      type: object
+      required:
+        - response_type
+        - next_action
+        - progress
+        - missing_questions
+        - available_actions
+        - ready_to_finalize
+      properties:
+        response_type:
+          type: string
+          enum:
+            - ask_question
+            - confirm
+            - request_missing
+            - offer_finalize
+            - finalize
+            - error
+            - continue_editing
+        next_action:
+          type: string
+          enum:
+            - continue_interview
+            - show_missing
+            - save_draft
+            - finalize
+            - retry
+            - continue_editing
+            - none
+        progress: { $ref: "#/components/schemas/InterviewProgress" }
+        missing_questions:
+          type: array
+          items: { $ref: "#/components/schemas/MissingQuestion" }
+        available_actions:
+          type: array
+          items:
+            type: string
+            enum:
+              - continue_interview
+              - show_missing
+              - save_draft
+              - finalize
+              - retry
+              - continue_editing
+        ready_to_finalize: { type: boolean }
+    FinalizeBlocked:
+      type: object
+      required: [error, code, interview_state]
+      properties:
+        error: { type: string }
+        code: { type: string, enum: [MISSING_REQUIREMENTS] }
+        interview_state: { $ref: "#/components/schemas/InterviewState" }
+    FinalizeConflict:
+      type: object
+      required: [error, code]
+      properties:
+        error: { type: string }
+        code: { type: string, enum: [SESSION_NOT_ACTIVE] }
+    ProjectDocument:
+      type: object
+      required: [session_id, title, markdown, json_data, status]
+      properties:
+        session_id: { type: integer }
+        title: { type: string }
+        markdown: { type: string }
+        json_data: { type: object, additionalProperties: true }
+        status: { type: string, enum: [draft, final, sent] }
+    SendProjectDocumentInput:
+      type: object
+      required: [session_id]
+      properties:
+        session_id: { type: integer }
+    AudioUploadInput:
+      type: object
+      required: [audio]
+      properties:
+        audio:
+          type: string
+          format: binary
+    Transcription:
+      type: object
+      required: [text]
+      properties:
+        text: { type: string }
+    ReferenceFile:
+      type: object
+      required: [id, name, mime_type, size, created_at]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        mime_type: { type: string }
+        size: { type: integer }
+        created_at: { type: string }
+
