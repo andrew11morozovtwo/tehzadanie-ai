@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
 import multer from "multer";
@@ -43,6 +43,7 @@ import {
   type InterviewState,
 } from "../lib/requirements-ai";
 import {
+  EmailDeliveryError,
   sendProjectDocumentEmail,
   sendWelcomeEmail,
 } from "../lib/send-project-document";
@@ -697,18 +698,59 @@ router.post("/send-tz", async (req, res): Promise<void> => {
     res.status(409).json({ error: "ТЗ изменилось. Сначала соберите обновлённую версию." });
     return;
   }
+  if (session.status === "sent" || document.status === "sent") {
+    const [updated] = await db
+      .update(projectDocumentsTable)
+      .set({ status: "sent" })
+      .where(eq(projectDocumentsTable.id, document.id))
+      .returning();
+    await db
+      .update(requirementSessionsTable)
+      .set({ status: "sent", lastActive: new Date() })
+      .where(eq(requirementSessionsTable.id, session.id));
+    res.json(
+      SendProjectDocumentResponse.parse({
+        session_id: session.id,
+        title: session.title,
+        markdown: updated.markdown,
+        json_data: updated.jsonData,
+        status: "sent",
+      }),
+    );
+    return;
+  }
   try {
+    const version = createHash("sha256")
+      .update(session.title)
+      .update(document.markdown)
+      .update(JSON.stringify(document.jsonData))
+      .digest("hex");
     await sendProjectDocumentEmail({
       clientName: user.name,
       title: session.title,
       markdown: document.markdown,
       jsonData: document.jsonData,
+      idempotencyKey: `project-document-${document.id}-${version}`,
     });
   } catch (error) {
-    req.log.error({ err: error }, "Technical brief delivery failed");
-    res.status(502).json({ error: "Не удалось отправить ТЗ. Попробуйте позже." });
+    req.log.error(
+      {
+        documentId: document.id,
+        providerStatus: error instanceof EmailDeliveryError ? error.status : null,
+        providerCode: error instanceof EmailDeliveryError ? error.providerCode : null,
+        failureKind: error instanceof EmailDeliveryError ? "provider_rejected" : "delivery_failed",
+      },
+      "Technical brief delivery failed",
+    );
+    res.status(502).json({
+      error:
+        error instanceof EmailDeliveryError && error.status === 403
+          ? "Почтовый сервис отклонил отправку. Проверьте подтверждение домена отправителя и адрес получателя."
+          : "Не удалось отправить ТЗ. Попробуйте позже.",
+    });
     return;
   }
+  req.log.info({ documentId: document.id, deliveryStatus: "accepted_by_provider" }, "Technical brief submitted to email provider");
   const [updated] = await db
     .update(projectDocumentsTable)
     .set({ status: "sent" })

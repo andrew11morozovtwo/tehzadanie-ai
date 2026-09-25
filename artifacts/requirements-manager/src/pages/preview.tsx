@@ -31,6 +31,7 @@ export default function Preview({ id }: { id: string }) {
   const [isSent, setIsSent] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const wasSent = isSent || document?.status === "sent";
 
   const downloadMarkdown = () => {
     if (!document) return;
@@ -47,10 +48,32 @@ export default function Preview({ id }: { id: string }) {
     setIsSending(true);
     setSendError(null);
     try {
-      await sendProjectDocument({ session_id: numericId });
+      try {
+        await sendProjectDocument({ session_id: numericId });
+      } catch (error) {
+        if (!(error instanceof TypeError)) throw error;
+        await new Promise((resolve) => window.setTimeout(resolve, 700));
+        await sendProjectDocument({ session_id: numericId });
+      }
       setIsSent(true);
-    } catch {
-      setSendError("Не удалось отправить ТЗ. Проверьте настройки почты и повторите попытку.");
+    } catch (error) {
+      const responseData =
+        typeof error === "object" && error !== null && "data" in error
+          ? (error as { data?: unknown }).data
+          : null;
+      const serverMessage =
+        typeof responseData === "object" &&
+        responseData !== null &&
+        "error" in responseData &&
+        typeof (responseData as { error?: unknown }).error === "string"
+          ? (responseData as { error: string }).error
+          : null;
+      setSendError(
+        serverMessage ??
+          (error instanceof TypeError
+            ? "Не удалось связаться с сервером. Проверьте интернет и повторите попытку."
+            : "Не удалось отправить ТЗ. Повторите попытку."),
+      );
     } finally {
       setIsSending(false);
     }
@@ -108,11 +131,11 @@ export default function Preview({ id }: { id: string }) {
           </Button>
           {document.status !== "draft" && (
           <Button
-              className={`shadow-md font-semibold px-6 transition-all ${isSent ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
+              className={`shadow-md font-semibold px-6 transition-all ${wasSent ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
               onClick={deliverDocument}
-              disabled={isSent || isSending}
+              disabled={wasSent || isSending}
             >
-              {isSent ? (
+              {wasSent ? (
                 <><CheckCircle2 className="w-4 h-4 mr-2" /> Отправлено</>
               ) : isSending ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Отправляем</>

@@ -8,6 +8,36 @@ type EmailPayload = {
   idempotencyKey?: string;
 };
 
+export class EmailDeliveryError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly providerCode: string | null,
+  ) {
+    super(`Email provider rejected the request (${status}${providerCode ? `: ${providerCode}` : ""})`);
+    this.name = "EmailDeliveryError";
+  }
+}
+
+async function ensureDelivered(response: Response): Promise<void> {
+  if (response.ok) return;
+  let code: string | null = null;
+  try {
+    const body: unknown = await response.json();
+    if (
+      body &&
+      typeof body === "object" &&
+      "name" in body &&
+      typeof body.name === "string" &&
+      /^[a-z_]{1,60}$/.test(body.name)
+    ) {
+      code = body.name;
+    }
+  } catch {
+    // The response body may not be JSON. Never log it: it can include personal data.
+  }
+  throw new EmailDeliveryError(response.status, code);
+}
+
 function toHtml(markdown: string): string {
   return markdown
     .replace(/&/g, "&amp;")
@@ -58,10 +88,7 @@ export async function sendInternalEmail(input: {
     html: input.html,
     idempotencyKey: input.idempotencyKey,
   });
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`Resend rejected the internal delivery: ${response.status} ${detail.slice(0, 500)}`);
-  }
+  await ensureDelivered(response);
 }
 
 export async function sendProjectDocumentEmail(input: {
@@ -69,6 +96,7 @@ export async function sendProjectDocumentEmail(input: {
   title: string;
   markdown: string;
   jsonData: unknown;
+  idempotencyKey: string;
 }): Promise<void> {
   const recipient = process.env.DEVELOPER_EMAIL;
   if (!recipient) {
@@ -80,12 +108,10 @@ export async function sendProjectDocumentEmail(input: {
     to: [recipient],
     subject: `Новое ТЗ от ${input.clientName} — ${input.title}`,
     html: `${toHtml(input.markdown)}<hr /><pre>${JSON.stringify(input.jsonData, null, 2)}</pre>`,
+    idempotencyKey: input.idempotencyKey,
   });
 
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`Resend rejected the delivery: ${response.status} ${detail.slice(0, 500)}`);
-  }
+  await ensureDelivered(response);
 }
 
 export async function sendWelcomeEmail(input: {
@@ -99,8 +125,5 @@ export async function sendWelcomeEmail(input: {
     subject: "Доступ к ТехЗадание.AI",
     html: `<p>Здравствуйте, ${input.name}.</p><p>Ваш временный пароль: <strong>${input.password}</strong></p><p>Сохраните его в надежном месте. Он понадобится для повторного входа.</p>`,
   });
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`Resend rejected the welcome email: ${response.status} ${detail.slice(0, 500)}`);
-  }
+  await ensureDelivered(response);
 }
