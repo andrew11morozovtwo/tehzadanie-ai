@@ -91,6 +91,22 @@ export async function sendInternalEmail(input: {
   await ensureDelivered(response);
 }
 
+export async function sendDeveloperRegistrationEmail(input: {
+  name: string;
+  email: string;
+}): Promise<void> {
+  const recipient = process.env.DEVELOPER_EMAIL;
+  if (!recipient) {
+    throw new Error("DEVELOPER_EMAIL must be configured before notifying developers of registrations");
+  }
+
+  await sendInternalEmail({
+    recipient,
+    subject: "Новая регистрация в ТехЗадание.AI",
+    html: `<p>Зарегистрирован новый пользователь.</p><p>Имя: <strong>${toHtml(input.name)}</strong></p><p>Email: <strong>${toHtml(input.email)}</strong></p>`,
+  });
+}
+
 export async function sendProjectDocumentEmail(input: {
   clientName: string;
   title: string;

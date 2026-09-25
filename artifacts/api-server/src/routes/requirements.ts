@@ -44,6 +44,7 @@ import {
 } from "../lib/requirements-ai";
 import {
   EmailDeliveryError,
+  sendDeveloperRegistrationEmail,
   sendProjectDocumentEmail,
   sendWelcomeEmail,
 } from "../lib/send-project-document";
@@ -237,6 +238,23 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     .values({ name: body.data.name.trim(), email, passwordHash })
     .returning();
   setSessionCookie(res, user.id);
+  try {
+    await sendDeveloperRegistrationEmail({ name: user.name, email: user.email });
+    req.log.info(
+      { userId: user.id, deliveryStatus: "accepted_by_provider" },
+      "Developer registration notification submitted to email provider",
+    );
+  } catch (error) {
+    req.log.error(
+      {
+        userId: user.id,
+        providerStatus: error instanceof EmailDeliveryError ? error.status : null,
+        providerCode: error instanceof EmailDeliveryError ? error.providerCode : null,
+      },
+      "Developer registration notification failed",
+    );
+    // Registration already exists; an email failure must not make the client retry creating the account.
+  }
   void sendWelcomeEmail({ name: user.name, email: user.email, password }).catch((error) => {
     req.log.warn({ err: error }, "Welcome email delivery failed");
   });
