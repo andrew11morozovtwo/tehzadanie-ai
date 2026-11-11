@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { PlusCircle, MessageSquare, Clock, FileText, ChevronRight, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
+import { EMAIL_AUTH_UI_ENABLED } from "@/lib/email-auth";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -49,7 +50,7 @@ export default function Dashboard() {
     <div className="container mx-auto px-4 md:px-8 py-8 md:py-12 max-w-6xl">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
         <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Ваши проекты</h1>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{EMAIL_AUTH_UI_ENABLED ? "Мои ТЗ" : "Ваши проекты"}</h1>
           <p className="text-muted-foreground text-lg">Обсуждения и готовые технические задания.</p>
         </div>
         <Button size="lg" onClick={handleNewProject} disabled={createSession.isPending} className="shadow-md">

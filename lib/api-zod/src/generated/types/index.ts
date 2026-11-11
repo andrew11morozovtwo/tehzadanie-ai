@@ -8,12 +8,17 @@
 
 export * from './audioUploadInput';
 export * from './authResponse';
+export * from './confirmEmailLoginBody';
 export * from './createSessionInput';
+export * from './emailAuthReply';
+export * from './emailAuthReplyStatus';
 export * from './finalizeBlocked';
 export * from './finalizeBlockedCode';
 export * from './finalizeConflict';
 export * from './finalizeConflictCode';
+export * from './getEmailCsrf200';
 export * from './healthStatus';
+export * from './inspectEmailLoginBody';
 export * from './interviewProgress';
 export * from './interviewState';
 export * from './interviewStateAvailableActionsItem';
@@ -32,6 +37,7 @@ export * from './projectDocumentJsonData';
 export * from './projectDocumentStatus';
 export * from './referenceFile';
 export * from './registerInput';
+export * from './requestEmailLoginBody';
 export * from './sendProjectDocumentInput';
 export * from './session';
 export * from './sessionDetail';

@@ -4,3 +4,4 @@ export * from "./project-documents";
 export * from "./reference-files";
 export * from "./requirement-sessions";
 export * from "./users";
+export * from "./email-auth";

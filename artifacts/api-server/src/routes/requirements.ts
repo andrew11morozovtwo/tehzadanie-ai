@@ -34,6 +34,7 @@ import {
 } from "@workspace/db";
 import { clearSessionCookie, getUserId, setSessionCookie } from "../lib/auth";
 import { getProxyApiConfig } from "../lib/proxyapi";
+import { BriefQualityError } from "../lib/brief-quality";
 import {
   coerceInterviewState,
   createInitialInterviewState,
@@ -410,7 +411,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     .select()
     .from(usersTable)
     .where(eq(usersTable.email, email));
-  if (!user || !(await bcrypt.compare(body.data.password, user.passwordHash))) {
+  if (!user || !user.passwordHash || !(await bcrypt.compare(body.data.password, user.passwordHash))) {
     res.status(401).json({ error: "Неверный email или пароль" });
     return;
   }
@@ -551,7 +552,9 @@ router.post("/sessions/:id/message", async (req, res): Promise<void> => {
       await finalizeRequirementSession(session, userId, reply.interviewState);
     } catch (error) {
       req.log.warn({ err: error }, "Technical brief generation failed");
-      res.status(502).json({ error: "Не удалось сформировать ТЗ. Попробуйте ещё раз через минуту." });
+      res.status(502).json({ error: error instanceof BriefQualityError
+        ? "Не удалось завершить проверку и доработку ТЗ. Диалог сохранён. Повторите сборку документа."
+        : "Не удалось сформировать ТЗ. Попробуйте ещё раз через минуту." });
       return;
     }
     const [assistantMessage] = await db
@@ -652,7 +655,9 @@ router.post("/sessions/:id/finalize", async (req, res): Promise<void> => {
     ));
   } catch (error) {
     req.log.warn({ err: error }, "Technical brief generation failed");
-    res.status(502).json({ error: "Не удалось сформировать ТЗ. Попробуйте ещё раз через минуту." });
+    res.status(502).json({ error: error instanceof BriefQualityError
+      ? "Не удалось завершить проверку и доработку ТЗ. Диалог сохранён. Повторите сборку документа."
+      : "Не удалось сформировать ТЗ. Попробуйте ещё раз через минуту." });
     return;
   }
   res.json(

@@ -22,16 +22,21 @@ import type {
 import type {
   AudioUploadInput,
   AuthResponse,
+  ConfirmEmailLoginBody,
   CreateSessionInput,
+  EmailAuthReply,
   FinalizeBlocked,
   FinalizeConflict,
+  GetEmailCsrf200,
   HealthStatus,
+  InspectEmailLoginBody,
   LoginInput,
   MessageInput,
   MessagePair,
   ProjectDocument,
   ReferenceFile,
   RegisterInput,
+  RequestEmailLoginBody,
   SendProjectDocumentInput,
   Session,
   SessionDetail,
@@ -66,6 +71,296 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetEmailCsrfUrl = () => {
+
+
+
+
+  return `/api/auth/email/csrf`
+}
+
+/**
+ * @summary Get a double-submit CSRF token when email login is enabled
+ */
+export const getEmailCsrf = async ( options?: Parameters<typeof customFetch>[1]): Promise<GetEmailCsrf200> => {
+
+  return customFetch<GetEmailCsrf200>(getGetEmailCsrfUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEmailCsrfQueryKey = () => {
+    return [
+    `/api/auth/email/csrf`
+    ] as const;
+    }
+
+
+export const getGetEmailCsrfQueryOptions = <TData = Awaited<ReturnType<typeof getEmailCsrf>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailCsrf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEmailCsrfQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEmailCsrf>>> = ({ signal }) => getEmailCsrf({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEmailCsrf>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEmailCsrfQueryResult = NonNullable<Awaited<ReturnType<typeof getEmailCsrf>>>
+export type GetEmailCsrfQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get a double-submit CSRF token when email login is enabled
+ */
+
+export function useGetEmailCsrf<TData = Awaited<ReturnType<typeof getEmailCsrf>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEmailCsrf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEmailCsrfQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRequestEmailLoginUrl = () => {
+
+
+
+
+  return `/api/auth/email/request`
+}
+
+/**
+ * @summary Request an email link without creating a user
+ */
+export const requestEmailLogin = async (requestEmailLoginBody: RequestEmailLoginBody, options?: Parameters<typeof customFetch>[1]): Promise<EmailAuthReply> => {
+
+  return customFetch<EmailAuthReply>(getRequestEmailLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(requestEmailLoginBody)
+  }
+);}
+
+
+
+
+
+export const getRequestEmailLoginMutationOptions = <TError = ErrorType<EmailAuthReply>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestEmailLogin>>, TError,{data: BodyType<RequestEmailLoginBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestEmailLogin>>, TError,{data: BodyType<RequestEmailLoginBody>}, TContext> => {
+
+const mutationKey = ['requestEmailLogin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestEmailLogin>>, {data: BodyType<RequestEmailLoginBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestEmailLogin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestEmailLoginMutationResult = NonNullable<Awaited<ReturnType<typeof requestEmailLogin>>>
+    export type RequestEmailLoginMutationBody = BodyType<RequestEmailLoginBody>
+    export type RequestEmailLoginMutationError = ErrorType<EmailAuthReply>
+
+    /**
+ * @summary Request an email link without creating a user
+ */
+export const useRequestEmailLogin = <TError = ErrorType<EmailAuthReply>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestEmailLogin>>, TError,{data: BodyType<RequestEmailLoginBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestEmailLogin>>,
+        TError,
+        {data: BodyType<RequestEmailLoginBody>},
+        TContext
+      > => {
+      return useMutation(getRequestEmailLoginMutationOptions(options));
+    }
+
+export const getInspectEmailLoginUrl = () => {
+
+
+
+
+  return `/api/auth/email/inspect`
+}
+
+/**
+ * @summary Inspect a link without consuming it or creating a session
+ */
+export const inspectEmailLogin = async (inspectEmailLoginBody: InspectEmailLoginBody, options?: Parameters<typeof customFetch>[1]): Promise<EmailAuthReply> => {
+
+  return customFetch<EmailAuthReply>(getInspectEmailLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(inspectEmailLoginBody)
+  }
+);}
+
+
+
+
+
+export const getInspectEmailLoginMutationOptions = <TError = ErrorType<EmailAuthReply>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inspectEmailLogin>>, TError,{data: BodyType<InspectEmailLoginBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof inspectEmailLogin>>, TError,{data: BodyType<InspectEmailLoginBody>}, TContext> => {
+
+const mutationKey = ['inspectEmailLogin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof inspectEmailLogin>>, {data: BodyType<InspectEmailLoginBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  inspectEmailLogin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InspectEmailLoginMutationResult = NonNullable<Awaited<ReturnType<typeof inspectEmailLogin>>>
+    export type InspectEmailLoginMutationBody = BodyType<InspectEmailLoginBody>
+    export type InspectEmailLoginMutationError = ErrorType<EmailAuthReply>
+
+    /**
+ * @summary Inspect a link without consuming it or creating a session
+ */
+export const useInspectEmailLogin = <TError = ErrorType<EmailAuthReply>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inspectEmailLogin>>, TError,{data: BodyType<InspectEmailLoginBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof inspectEmailLogin>>,
+        TError,
+        {data: BodyType<InspectEmailLoginBody>},
+        TContext
+      > => {
+      return useMutation(getInspectEmailLoginMutationOptions(options));
+    }
+
+export const getConfirmEmailLoginUrl = () => {
+
+
+
+
+  return `/api/auth/email/confirm`
+}
+
+/**
+ * @summary Explicitly confirm mailbox ownership and atomically create a server-backed JWT session
+ */
+export const confirmEmailLogin = async (confirmEmailLoginBody: ConfirmEmailLoginBody, options?: Parameters<typeof customFetch>[1]): Promise<EmailAuthReply> => {
+
+  return customFetch<EmailAuthReply>(getConfirmEmailLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(confirmEmailLoginBody)
+  }
+);}
+
+
+
+
+
+export const getConfirmEmailLoginMutationOptions = <TError = ErrorType<EmailAuthReply>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmEmailLogin>>, TError,{data: BodyType<ConfirmEmailLoginBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmEmailLogin>>, TError,{data: BodyType<ConfirmEmailLoginBody>}, TContext> => {
+
+const mutationKey = ['confirmEmailLogin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmEmailLogin>>, {data: BodyType<ConfirmEmailLoginBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmEmailLogin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmEmailLoginMutationResult = NonNullable<Awaited<ReturnType<typeof confirmEmailLogin>>>
+    export type ConfirmEmailLoginMutationBody = BodyType<ConfirmEmailLoginBody>
+    export type ConfirmEmailLoginMutationError = ErrorType<EmailAuthReply>
+
+    /**
+ * @summary Explicitly confirm mailbox ownership and atomically create a server-backed JWT session
+ */
+export const useConfirmEmailLogin = <TError = ErrorType<EmailAuthReply>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmEmailLogin>>, TError,{data: BodyType<ConfirmEmailLoginBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmEmailLogin>>,
+        TError,
+        {data: BodyType<ConfirmEmailLoginBody>},
+        TContext
+      > => {
+      return useMutation(getConfirmEmailLoginMutationOptions(options));
+    }
 
 export const getHealthCheckUrl = () => {
 

@@ -1,0 +1,11 @@
+{
+  "observed_on": "2026-11-05",
+  "method": "explainSchemaDiff, read-only comparison of live development and production schemas",
+  "success": true,
+  "hasDiff": false,
+  "statementsToExecute": [],
+  "hasStructuralDataLoss": false,
+  "maybeNonBackwardsCompatible": false,
+  "warnings": [],
+  "limitation": "Proposed schema is intentionally not applied to either database. This empty current diff is NOT the future email-auth migration. An actual proposed publish diff requires a separately approved development-schema change first; never publish merely to obtain SQL."
+}

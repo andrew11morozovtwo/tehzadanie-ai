@@ -17,6 +17,20 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+export type CsrfTokenConfig = {
+  /** Restrict automatic headers to this app's API, including its base path. */
+  pathPrefix?: string;
+  /** Invalidate a cached token for the next user action; never retry mutations. */
+  onRejected?: () => void;
+};
+let _csrfTokenGetter: (() => Promise<string>) | null = null;
+let _csrfConfig: CsrfTokenConfig = {};
+
+/** Opt-in web CSRF protection. Unset preserves all existing clients' behavior. */
+export function setCsrfTokenGetter(getter: (() => Promise<string>) | null, config: CsrfTokenConfig = {}): void {
+  _csrfTokenGetter = getter;
+  _csrfConfig = getter ? config : {};
+}
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -336,6 +350,16 @@ export async function customFetch<T = unknown>(
   }
 
   const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
+  let attachedCsrf = false;
+  if (_csrfTokenGetter && !["GET", "HEAD", "OPTIONS"].includes(method)) {
+    const target = resolveUrl(input);
+    const url = typeof window !== "undefined" ? new URL(target, window.location.href) : null;
+    const prefix = _csrfConfig.pathPrefix?.replace(/\/?$/, "/");
+    if (url && url.origin === window.location.origin && (!prefix || url.pathname.startsWith(prefix))) {
+      headers.set("X-CSRF-Token", await _csrfTokenGetter());
+      attachedCsrf = true;
+    }
+  }
 
   if (
     typeof init.body === "string" &&
@@ -362,6 +386,7 @@ export async function customFetch<T = unknown>(
 
   const response = await fetch(input, { ...init, method, headers });
 
+  if (response.status === 403 && attachedCsrf) _csrfConfig.onRejected?.();
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);
     throw new ApiError(response, errorData, requestInfo);

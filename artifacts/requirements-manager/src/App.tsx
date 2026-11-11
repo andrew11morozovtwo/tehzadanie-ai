@@ -6,6 +6,19 @@ import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Chat from "@/pages/chat";
 import Preview from "@/pages/preview";
+import EmailLogin from "@/pages/email-login";
+import EmailConfirm from "@/pages/email-confirm";
+import * as apiClient from "@workspace/api-client-react";
+import { EMAIL_AUTH_UI_ENABLED, apiUrl, getEmailCsrfToken, resetEmailCsrfToken } from "@/lib/email-auth";
+
+if (EMAIL_AUTH_UI_ENABLED) {
+  apiClient.setCsrfTokenGetter(getEmailCsrfToken, {
+    pathPrefix: apiUrl(""),
+    onRejected: resetEmailCsrfToken,
+  });
+}
+
+const LoginPage = EMAIL_AUTH_UI_ENABLED ? EmailLogin : Login;
 
 const queryClient = new QueryClient();
 
@@ -24,9 +37,10 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
         <Switch>
-          <Route path="/login" component={Login} />
+          <Route path="/login" component={LoginPage} />
+          {EMAIL_AUTH_UI_ENABLED ? <Route path="/auth/confirm" component={EmailConfirm} /> : null}
           <Route path="/">
-            {() => <Login />}
+            {() => <LoginPage />}
           </Route>
           <Route path="/dashboard">
             {() => <Layout><Dashboard /></Layout>}
@@ -40,6 +54,7 @@ export default function App() {
           <Route component={NotFound} />
         </Switch>
       </WouterRouter>
+      {EMAIL_AUTH_UI_ENABLED ? <Toaster /> : null}
     </QueryClientProvider>
   );
 }

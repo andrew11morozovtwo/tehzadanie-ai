@@ -1,7 +1,23 @@
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { emailAuthEnabled } from "../modules/email-auth/settings";
 
 const COOKIE_NAME = "requirements_session";
+const verifiedUsers = new WeakMap<Request, number>();
+
+export function attachVerifiedUser(req: Request, userId: number): void {
+  verifiedUsers.set(req, userId);
+}
+
+export function readSignedSession(req: Request): { userId: number; sid?: string } | null {
+  const token = req.cookies?.[COOKIE_NAME];
+  if (typeof token !== "string") return null;
+  try {
+    const value = jwt.verify(token, secret(), { algorithms: ["HS256"] });
+    if (typeof value !== "object" || !Number.isSafeInteger(value.userId) || value.userId < 1) return null;
+    return { userId: value.userId, sid: typeof value.sid === "string" ? value.sid : undefined };
+  } catch { return null; }
+}
 
 function secret(): string {
   const value = process.env.SESSION_SECRET;
@@ -12,6 +28,8 @@ function secret(): string {
 }
 
 export function getUserId(req: Request): number | null {
+  // A legacy signed JWT is insufficient after the explicitly approved rollout.
+  if (emailAuthEnabled()) return verifiedUsers.get(req) ?? null;
   const token = req.cookies?.[COOKIE_NAME];
   if (typeof token !== "string") return null;
 
@@ -25,8 +43,8 @@ export function getUserId(req: Request): number | null {
   }
 }
 
-export function setSessionCookie(res: Response, userId: number): void {
-  const token = jwt.sign({ userId }, secret(), { expiresIn: "30d" });
+export function setSessionCookie(res: Response, userId: number, sid?: string): void {
+  const token = jwt.sign({ userId, ...(sid ? { sid } : {}) }, secret(), { expiresIn: "30d" });
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",

@@ -5,14 +5,48 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
+export type EmailAuthReplyStatus = typeof EmailAuthReplyStatus[keyof typeof EmailAuthReplyStatus];
+
+
+export const EmailAuthReplyStatus = {
+  accepted: 'accepted',
+  valid: 'valid',
+  invalid: 'invalid',
+  invalid_email: 'invalid_email',
+  expired: 'expired',
+  used: 'used',
+  forbidden: 'forbidden',
+  unavailable: 'unavailable',
+  limited: 'limited',
+  consent_required: 'consent_required',
+  name_required: 'name_required',
+  legacy_password_required: 'legacy_password_required',
+  legacy_attempts_exhausted: 'legacy_attempts_exhausted',
+  confirmed: 'confirmed',
+  email_confirmation_required: 'email_confirmation_required',
+} as const;
 
 export interface User {
   id: number;
   name: string;
   email: string;
+}
+
+export interface EmailAuthReply {
+  status: EmailAuthReplyStatus;
+  message?: string;
+  error?: string;
+  retry_after_seconds?: number;
+  /** Masked target address; never a login token */
+  email?: string;
+  requires_name?: boolean;
+  requires_legacy_password?: boolean;
+  user?: User;
+  return_to?: string;
+}
+
+export interface HealthStatus {
+  status: string;
 }
 
 export interface RegisterInput {
@@ -252,6 +286,37 @@ export interface ReferenceFile {
   size: number;
   created_at: string;
 }
+
+export type GetEmailCsrf200 = {
+  csrf_token: string;
+};
+
+export type RequestEmailLoginBody = {
+  /** @maxLength 254 */
+  email: string;
+};
+
+export type InspectEmailLoginBody = {
+  /**
+     * @minLength 43
+     * @maxLength 43
+     */
+  token: string;
+};
+
+export type ConfirmEmailLoginBody = {
+  /**
+     * @minLength 43
+     * @maxLength 43
+     */
+  token: string;
+  /** @maxLength 120 */
+  name?: string;
+  /** @maxLength 1024 */
+  password?: string;
+  switch_consent: boolean;
+  return_to?: string;
+};
 
 export type UploadReferenceFileBody = {
   file: Blob;

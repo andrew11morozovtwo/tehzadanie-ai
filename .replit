@@ -1,0 +1,50 @@
+modules = ["nodejs-24", "python-base-3.13", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[nix]
+channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+DEVELOPER_EMAIL = "andrew11morozov@gmail.com"
+PROXYAPI_BASE_URL = "https://api.proxyapi.ru/openai/v1"
+
+[userenv.development]
+AUTH_IP_MAX_PER_HOUR = "60"
+AUTH_PUBLIC_URL = "https://73e0b3d4-d160-49d2-b6a1-b63f44c496cd-00-2fftk316qvf2z.pike.replit.dev/"
+AUTH_TRUST_PROXY_HOPS = "0"
+EMAIL_AUTH_ENABLED = "true"
+EMAIL_AUTH_MAIL_MODE = "preview-verified"
+VITE_EMAIL_AUTH_ENABLED = "true"
+EMAIL_AUTH_PREVIEW_SEND_APPROVED = "true"
+EMAIL_AUTH_PREVIEW_SEND_ID = "018ea2d0ddd44950aedc9a52375c28f2"
+EMAIL_AUTH_FROM_EMAIL = "login@notify.databotsolution.ru"
+
+[userenv.production]
+AUTH_IP_MAX_PER_HOUR = "60"
+AUTH_PUBLIC_URL = "https://ai-mieniedzhier-sbora-triebovanii.replit.app/"
+AUTH_TRUST_PROXY_HOPS = "0"
+EMAIL_AUTH_ENABLED = "true"
+EMAIL_AUTH_FROM_EMAIL = "login@notify.databotsolution.ru"
+EMAIL_AUTH_MAIL_MODE = "resend"
+EMAIL_AUTH_TRANSPORT = "connector"
+VITE_EMAIL_AUTH_ENABLED = "true"

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
+import { apiUrl, emailAuthFetch } from "@/lib/email-auth";
 import {
   getGetProjectDocumentQueryKey,
   getGetSessionQueryKey,
@@ -82,7 +83,7 @@ export default function Chat({ id }: { id: string }) {
 
   useEffect(() => {
     if (!session) return;
-    fetch(`/api/sessions/${numericId}/files`)
+    emailAuthFetch(apiUrl(`sessions/${numericId}/files`))
       .then((response) => response.ok ? response.json() : [])
       .then((files) => setAttachments(files))
       .catch(() => setAttachmentError("Не удалось загрузить список материалов."));
@@ -220,7 +221,7 @@ export default function Chat({ id }: { id: string }) {
         try {
           const formData = new FormData();
           formData.append("audio", audio, "voice-message.webm");
-          const response = await fetch("/api/transcribe", { method: "POST", body: formData });
+          const response = await emailAuthFetch(apiUrl("transcribe"), { method: "POST", body: formData });
           if (!response.ok) throw new Error("transcription failed");
           const data = (await response.json()) as { text?: string };
           if (data.text) setContent((current) => `${current}${current ? " " : ""}${data.text}`);
@@ -245,7 +246,7 @@ export default function Chat({ id }: { id: string }) {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const response = await fetch(`/api/sessions/${numericId}/files`, {
+      const response = await emailAuthFetch(apiUrl(`sessions/${numericId}/files`), {
         method: "POST",
         body: formData,
       });
@@ -265,7 +266,7 @@ export default function Chat({ id }: { id: string }) {
 
   const deleteReference = async (fileId: number) => {
     try {
-      const response = await fetch(`/api/sessions/${numericId}/files/${fileId}`, { method: "DELETE" });
+      const response = await emailAuthFetch(apiUrl(`sessions/${numericId}/files/${fileId}`), { method: "DELETE" });
       if (!response.ok) throw new Error();
       setAttachments((current) => current.filter((file) => file.id !== fileId));
     } catch {
@@ -295,7 +296,7 @@ export default function Chat({ id }: { id: string }) {
                   Формируем ТЗ
                 </DialogTitle>
                 <DialogDescription className="text-muted-foreground font-medium mt-1">
-                  AI-менеджер структурирует требования. Обычно это занимает до минуты.
+                  Готовим черновик, проверяем полноту и дорабатываем ТЗ по замечаниям инспектора. Это может занять несколько минут.
                 </DialogDescription>
               </DialogHeader>
               <div className="flex min-h-[160px] items-center justify-center border-y bg-muted/30 px-5 text-center text-sm font-medium text-muted-foreground">
@@ -307,11 +308,11 @@ export default function Chat({ id }: { id: string }) {
               <DialogHeader className="px-5 py-6 pr-12 text-left">
                 <DialogTitle className="text-xl font-bold">Не удалось сформировать ТЗ</DialogTitle>
                 <DialogDescription className="text-muted-foreground font-medium mt-1">
-                  AI не вернул готовый структурированный документ. Ваш диалог сохранён, можно безопасно повторить попытку.
+                  Не удалось завершить создание, проверку или доработку ТЗ. Ваш диалог сохранён, можно повторить попытку.
                 </DialogDescription>
               </DialogHeader>
               <div className="border-y bg-destructive/10 px-5 py-5 text-sm font-medium text-foreground">
-                Документ ещё не создан, проект не закрыт. Нажмите «Повторить», чтобы снова запустить сборку ТЗ.
+                Новый документ не сохранён. Нажмите «Повторить», чтобы снова запустить сборку и проверку ТЗ.
               </div>
               <DialogFooter className="border-t bg-muted/30 px-5 py-4 sm:px-6">
                 <Button variant="outline" onClick={() => setIsBriefOpen(false)} className="font-medium">

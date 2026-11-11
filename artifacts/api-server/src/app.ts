@@ -4,6 +4,9 @@ import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { pool } from "@workspace/db";
+import { emailAuthEnabled, readEmailAuthSettings } from "./modules/email-auth/settings";
+import { createEmailAuthRuntime } from "./modules/email-auth/runtime";
 
 const app: Express = express();
 const slowRequestMs = 3_000;
@@ -55,6 +58,13 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Off by default. No new schema queries, mail or session changes in the old mode.
+// Enable ONLY after a separately approved migration, backup and mail readiness check.
+if (emailAuthEnabled()) {
+  const settings = readEmailAuthSettings();
+  app.set("trust proxy", settings.trustProxyHops);
+  app.use("/api", createEmailAuthRuntime(pool, settings));
+}
 app.use("/api", router);
 
 export default app;

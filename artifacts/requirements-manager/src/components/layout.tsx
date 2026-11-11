@@ -5,6 +5,8 @@ import { useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, LogOut, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
+import { EMAIL_AUTH_UI_ENABLED, resetEmailCsrfToken } from "@/lib/email-auth";
 
 export function Layout({ children }: { children: ReactNode }) {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -19,6 +21,23 @@ export function Layout({ children }: { children: ReactNode }) {
   }, [isAuthenticated, isLoading, setLocation]);
 
   const handleLogout = async () => {
+    if (EMAIL_AUTH_UI_ENABLED) {
+      try {
+        await logout.mutateAsync();
+      } catch {
+        toast({
+          variant: "destructive",
+          title: "Не удалось выйти",
+          description: "Вы всё ещё в аккаунте. Проверьте соединение и попробуйте ещё раз.",
+        });
+        return;
+      }
+      await queryClient.cancelQueries();
+      resetEmailCsrfToken();
+      queryClient.clear();
+      setLocation("/login");
+      return;
+    }
     try {
       await logout.mutateAsync();
     } finally {
@@ -57,7 +76,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-6">
             <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
               <Link href="/dashboard" className="px-3 py-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                Дашборд
+                {EMAIL_AUTH_UI_ENABLED ? "Мои ТЗ" : "Дашборд"}
               </Link>
             </nav>
             <div className="flex items-center gap-4 border-l border-border pl-6">

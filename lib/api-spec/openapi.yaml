@@ -14,6 +14,106 @@ tags:
   - name: sessions
   - name: ai
 paths:
+  /auth/email/csrf:
+    get:
+      operationId: getEmailCsrf
+      tags: [auth]
+      summary: Get a double-submit CSRF token when email login is enabled
+      responses:
+        "200":
+          description: CSRF cookie and response; no login or token consumption
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [csrf_token]
+                properties:
+                  csrf_token: { type: string }
+  /auth/email/request:
+    post:
+      operationId: requestEmailLogin
+      tags: [auth]
+      summary: Request an email link without creating a user
+      parameters:
+        - { name: X-CSRF-Token, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email, maxLength: 254 }
+      responses:
+        "202":
+          description: Same response for new and existing addresses; acceptance is not verification
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EmailAuthReply" }
+        default:
+          description: Invalid input, rate limit, CSRF or mail service error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EmailAuthReply" }
+  /auth/email/inspect:
+    post:
+      operationId: inspectEmailLogin
+      tags: [auth]
+      summary: Inspect a link without consuming it or creating a session
+      parameters:
+        - { name: X-CSRF-Token, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string, minLength: 43, maxLength: 43 }
+      responses:
+        "200":
+          description: Link status and required confirmation fields
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EmailAuthReply" }
+        default:
+          description: CSRF or temporary service error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EmailAuthReply" }
+  /auth/email/confirm:
+    post:
+      operationId: confirmEmailLogin
+      tags: [auth]
+      summary: Explicitly confirm mailbox ownership and atomically create a server-backed JWT session
+      parameters:
+        - { name: X-CSRF-Token, in: header, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, switch_consent]
+              properties:
+                token: { type: string, minLength: 43, maxLength: 43 }
+                name: { type: string, maxLength: 120 }
+                password: { type: string, maxLength: 1024, writeOnly: true }
+                switch_consent: { type: boolean }
+                return_to: { type: string }
+      responses:
+        "200":
+          description: Cookie is set only after successful transaction commit
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EmailAuthReply" }
+        default:
+          description: Invalid link, legacy proof needed, switch consent, CSRF or temporary error
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EmailAuthReply" }
   /healthz:
     get:
       operationId: healthCheck
@@ -277,6 +377,21 @@ components:
       schema:
         type: integer
   schemas:
+    EmailAuthReply:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [accepted, valid, invalid, invalid_email, expired, used, forbidden, unavailable, limited, consent_required, name_required, legacy_password_required, legacy_attempts_exhausted, confirmed, email_confirmation_required]
+        message: { type: string }
+        error: { type: string }
+        retry_after_seconds: { type: integer }
+        email: { type: string, description: Masked target address; never a login token }
+        requires_name: { type: boolean }
+        requires_legacy_password: { type: boolean }
+        user: { $ref: "#/components/schemas/User" }
+        return_to: { type: string }
     HealthStatus:
       type: object
       properties:

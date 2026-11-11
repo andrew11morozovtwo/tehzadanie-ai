@@ -9,6 +9,120 @@ import * as zod from 'zod/v4';
 
 
 /**
+ * @summary Get a double-submit CSRF token when email login is enabled
+ */
+export const GetEmailCsrfResponse = zod.object({
+  "csrf_token": zod.string()
+})
+
+
+/**
+ * @summary Request an email link without creating a user
+ */
+export const RequestEmailLoginHeader = zod.object({
+  "X-CSRF-Token": zod.string()
+})
+
+export const requestEmailLoginBodyEmailMax = 254;
+
+
+
+export const RequestEmailLoginBody = zod.object({
+  "email": zod.email().max(requestEmailLoginBodyEmailMax)
+})
+
+export const RequestEmailLoginResponse = zod.object({
+  "status": zod.enum(['accepted', 'valid', 'invalid', 'invalid_email', 'expired', 'used', 'forbidden', 'unavailable', 'limited', 'consent_required', 'name_required', 'legacy_password_required', 'legacy_attempts_exhausted', 'confirmed', 'email_confirmation_required']),
+  "message": zod.string().optional(),
+  "error": zod.string().optional(),
+  "retry_after_seconds": zod.int().optional(),
+  "email": zod.string().optional().describe('Masked target address; never a login token'),
+  "requires_name": zod.boolean().optional(),
+  "requires_legacy_password": zod.boolean().optional(),
+  "user": zod.object({
+  "id": zod.int(),
+  "name": zod.string(),
+  "email": zod.email()
+}).optional(),
+  "return_to": zod.string().optional()
+})
+
+
+/**
+ * @summary Inspect a link without consuming it or creating a session
+ */
+export const InspectEmailLoginHeader = zod.object({
+  "X-CSRF-Token": zod.string()
+})
+
+export const inspectEmailLoginBodyTokenMin = 43;
+export const inspectEmailLoginBodyTokenMax = 43;
+
+
+
+export const InspectEmailLoginBody = zod.object({
+  "token": zod.string().min(inspectEmailLoginBodyTokenMin).max(inspectEmailLoginBodyTokenMax)
+})
+
+export const InspectEmailLoginResponse = zod.object({
+  "status": zod.enum(['accepted', 'valid', 'invalid', 'invalid_email', 'expired', 'used', 'forbidden', 'unavailable', 'limited', 'consent_required', 'name_required', 'legacy_password_required', 'legacy_attempts_exhausted', 'confirmed', 'email_confirmation_required']),
+  "message": zod.string().optional(),
+  "error": zod.string().optional(),
+  "retry_after_seconds": zod.int().optional(),
+  "email": zod.string().optional().describe('Masked target address; never a login token'),
+  "requires_name": zod.boolean().optional(),
+  "requires_legacy_password": zod.boolean().optional(),
+  "user": zod.object({
+  "id": zod.int(),
+  "name": zod.string(),
+  "email": zod.email()
+}).optional(),
+  "return_to": zod.string().optional()
+})
+
+
+/**
+ * @summary Explicitly confirm mailbox ownership and atomically create a server-backed JWT session
+ */
+export const ConfirmEmailLoginHeader = zod.object({
+  "X-CSRF-Token": zod.string()
+})
+
+export const confirmEmailLoginBodyTokenMin = 43;
+export const confirmEmailLoginBodyTokenMax = 43;
+
+export const confirmEmailLoginBodyNameMax = 120;
+
+export const confirmEmailLoginBodyPasswordMax = 1024;
+
+
+
+export const ConfirmEmailLoginBody = zod.object({
+  "token": zod.string().min(confirmEmailLoginBodyTokenMin).max(confirmEmailLoginBodyTokenMax),
+  "name": zod.string().max(confirmEmailLoginBodyNameMax).optional(),
+  "password": zod.string().max(confirmEmailLoginBodyPasswordMax).optional(),
+  "switch_consent": zod.boolean(),
+  "return_to": zod.string().optional()
+})
+
+export const ConfirmEmailLoginResponse = zod.object({
+  "status": zod.enum(['accepted', 'valid', 'invalid', 'invalid_email', 'expired', 'used', 'forbidden', 'unavailable', 'limited', 'consent_required', 'name_required', 'legacy_password_required', 'legacy_attempts_exhausted', 'confirmed', 'email_confirmation_required']),
+  "message": zod.string().optional(),
+  "error": zod.string().optional(),
+  "retry_after_seconds": zod.int().optional(),
+  "email": zod.string().optional().describe('Masked target address; never a login token'),
+  "requires_name": zod.boolean().optional(),
+  "requires_legacy_password": zod.boolean().optional(),
+  "user": zod.object({
+  "id": zod.int(),
+  "name": zod.string(),
+  "email": zod.email()
+}).optional(),
+  "return_to": zod.string().optional()
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */
